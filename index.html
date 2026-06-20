@@ -55,18 +55,24 @@
                 <div><label class="block font-semibold">Duration (e.g., 7 Days)</label><input type="text" id="duration" class="w-full border p-2 rounded" required></div>
                 
                 <div>
-                    <label class="block font-semibold">Image File Name (Without .png)</label>
+                    <label class="block font-semibold">Main Image File Name (Without .png)</label>
                     <div class="flex mt-1 shadow-sm">
                         <span id="image-path-prefix" class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-200 text-gray-600 text-sm font-medium">
-                            /tours/multiday/
+                            /images/
                         </span>
-                        <input type="text" id="image-filename" class="flex-1 block w-full border border-gray-300 p-2 focus:ring-blue-500 focus:border-blue-500 min-w-0" placeholder="e.g. kandy-tour" required>
+                        <input type="text" id="image-filename" class="flex-1 block w-full border border-gray-300 p-2 focus:ring-blue-500 focus:border-blue-500 min-w-0" placeholder="e.g. kandy-main" required>
                         <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-200 text-gray-600 text-sm font-medium">
                             .png
                         </span>
                     </div>
-                    <p class="text-xs text-gray-500 mt-1">Generated Image Path: <span id="path-preview" class="font-mono text-blue-600 font-bold">/tours/multiday/.png</span></p>
+                    <p class="text-xs text-gray-500 mt-1">Generated Main Path: <span id="path-preview" class="font-mono text-blue-600 font-bold">/images/.png</span></p>
                 </div>
+            </div>
+
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <label class="block font-semibold text-gray-800">Gallery Images (One filename per line, without .png)</label>
+                <p class="text-xs text-gray-500 mb-2">These will automatically be saved in the same path as the main image.</p>
+                <textarea id="gallery" rows="3" class="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500" placeholder="e.g.&#10;kandy-gallery-1&#10;kandy-gallery-2&#10;kandy-gallery-3"></textarea>
             </div>
             
             <div>
@@ -125,10 +131,11 @@
     <script>
         let toursData = { multidayTours: [], experiences: [], uniqueExperiences: [] };
 
+        // Updated default paths (using generic /images/ as requested in earlier steps)
         const imagePaths = {
-            multidayTours: "/tours/multiday/",
-            experiences: "/tours/experiences/",
-            uniqueExperiences: "/tours/unique/"
+            multidayTours: "/images/multiday/",
+            experiences: "/images/experiences/",
+            uniqueExperiences: "/images/unique/"
         };
 
         const prefixSpan = document.getElementById('image-path-prefix');
@@ -147,6 +154,9 @@
             prefixSpan.innerText = imagePaths[this.value];
             updatePathPreview();
         });
+
+        // Initialize prefix on load
+        prefixSpan.innerText = imagePaths[categorySelect.value];
 
         const textToArray = (id) => {
             const val = document.getElementById(id).value.trim();
@@ -197,9 +207,14 @@
             const fileName = fileNameInput.value.trim();
             
             if(!title) { alert("Please enter a Title before saving."); return; }
-            if(!fileName) { alert("Please enter an Image File Name before saving."); return; }
+            if(!fileName) { alert("Please enter a Main Image File Name before saving."); return; }
 
-            const fullImageUrl = prefixSpan.innerText.trim() + fileName + ".png";
+            const prefix = prefixSpan.innerText.trim();
+            const fullImageUrl = prefix + fileName + ".png";
+
+            // Process Gallery Images (NEW)
+            const galleryFilenames = textToArray('gallery');
+            const galleryUrls = galleryFilenames.map(name => prefix + name + ".png");
 
             const itineraryItems = [];
             document.querySelectorAll('.itinerary-item').forEach(item => {
@@ -213,6 +228,7 @@
                 price: Number(document.getElementById('price').value) || 0,
                 duration: document.getElementById('duration').value,
                 image: fullImageUrl,
+                gallery: galleryUrls, // Added Gallery Array
                 description: document.getElementById('description').value,
                 whyLove: textToArray('whyLove'),
                 inclusions: {
@@ -266,7 +282,7 @@
             URL.revokeObjectURL(url);
         }
 
-        // NEW: Generate Folders and Image Checklist ZIP
+        // Generate Folders and Image Checklist ZIP (Updated for Gallery)
         function downloadFoldersAndList() {
             const totalItems = toursData.multidayTours.length + toursData.experiences.length + toursData.uniqueExperiences.length;
             if(totalItems === 0) { 
@@ -278,34 +294,37 @@
             
             // Create folder structure inside the ZIP
             var publicFolder = zip.folder("public");
-            var toursFolder = publicFolder.folder("tours");
+            var imagesFolder = publicFolder.folder("images");
             
-            toursFolder.folder("multiday");
-            toursFolder.folder("experiences");
-            toursFolder.folder("unique");
+            imagesFolder.folder("multiday");
+            imagesFolder.folder("experiences");
+            imagesFolder.folder("unique");
 
             // Generate checklist text file
             let txt = "TOUR IMAGES CHECKLIST\n";
             txt += "=====================\n";
             txt += "Please place your image files in the exact folders as listed below:\n\n";
 
-            if(toursData.multidayTours.length > 0) {
-                txt += "--- Multi-day Tours ---\n";
-                toursData.multidayTours.forEach(t => txt += `[ ] public${t.image}\n`);
-                txt += "\n";
-            }
-            if(toursData.experiences.length > 0) {
-                txt += "--- Day Experiences ---\n";
-                toursData.experiences.forEach(t => txt += `[ ] public${t.image}\n`);
-                txt += "\n";
-            }
-            if(toursData.uniqueExperiences.length > 0) {
-                txt += "--- Unique Experiences ---\n";
-                toursData.uniqueExperiences.forEach(t => txt += `[ ] public${t.image}\n`);
-                txt += "\n";
-            }
+            const appendChecklist = (categoryArray, categoryName) => {
+                if(categoryArray.length > 0) {
+                    txt += `--- ${categoryName} ---\n`;
+                    categoryArray.forEach(t => {
+                        txt += `[ ] public${t.image} (Main Image)\n`;
+                        if(t.gallery && t.gallery.length > 0) {
+                            t.gallery.forEach(g => {
+                                txt += `    [ ] public${g} (Gallery Image)\n`;
+                            });
+                        }
+                    });
+                    txt += "\n";
+                }
+            };
 
-            toursFolder.file("Image_Checklist.txt", txt);
+            appendChecklist(toursData.multidayTours, "Multi-day Tours");
+            appendChecklist(toursData.experiences, "Day Experiences");
+            appendChecklist(toursData.uniqueExperiences, "Unique Experiences");
+
+            imagesFolder.file("Image_Checklist.txt", txt);
 
             // Generate ZIP and trigger download
             zip.generateAsync({type:"blob"}).then(function(content) {
