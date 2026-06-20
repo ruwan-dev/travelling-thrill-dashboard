@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tour Data Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom scrollbar for textareas */
+        textarea::-webkit-scrollbar { width: 8px; }
+        textarea::-webkit-scrollbar-track { background: #f1f1f1; }
+        textarea::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        textarea::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans p-6">
+
+    <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-8">
+        <div class="flex justify-between items-center border-b pb-4 mb-6">
+            <h1 class="text-3xl font-bold text-blue-900">Tour JSON Generator</h1>
+            <div class="text-sm font-semibold bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
+                <span id="count-multi">0</span> Multi-day | 
+                <span id="count-exp">0</span> Experiences | 
+                <span id="count-unique">0</span> Unique
+            </div>
+        </div>
+
+        <form id="tourForm" class="space-y-6">
+            
+            <div class="bg-blue-50 p-4 rounded-lg border border-blue-100">
+                <label class="block font-bold mb-2">Select Category</label>
+                <select id="category" class="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500">
+                    <option value="multidayTours">Multi-day Tour</option>
+                    <option value="experiences">Day Experience</option>
+                    <option value="uniqueExperiences">Unique Experience</option>
+                </select>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block font-semibold">Title</label><input type="text" id="title" class="w-full border p-2 rounded" required></div>
+                <div><label class="block font-semibold">Price (USD)</label><input type="number" id="price" class="w-full border p-2 rounded" required></div>
+                <div><label class="block font-semibold">Duration (e.g., 7 Days)</label><input type="text" id="duration" class="w-full border p-2 rounded" required></div>
+                <div><label class="block font-semibold">Image URL</label><input type="url" id="image" class="w-full border p-2 rounded" required></div>
+            </div>
+            
+            <div>
+                <label class="block font-semibold">Description</label>
+                <textarea id="description" rows="3" class="w-full border p-2 rounded" required></textarea>
+            </div>
+
+            <hr>
+
+            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                <p class="text-sm text-yellow-800 mb-4 font-semibold">💡 Tip: Enter one item per line for the fields below.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold">Why you'll love this (whyLove)</label>
+                        <textarea id="whyLove" rows="4" class="w-full border p-2 rounded" placeholder="Line 1&#10;Line 2"></textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold">Included Activities</label>
+                        <textarea id="includedActivities" rows="4" class="w-full border p-2 rounded" placeholder="Activity 1&#10;Activity 2"></textarea>
+                    </div>
+                    <div>
+                        <label class="block font-semibold">Optional Activities</label>
+                        <textarea id="optionalActivities" rows="4" class="w-full border p-2 rounded" placeholder="Optional 1&#10;Optional 2"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <hr>
+
+            <h3 class="text-xl font-bold text-gray-700">Inclusions Details</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block font-semibold">Destinations</label><input type="text" id="destinations" class="w-full border p-2 rounded" placeholder="Colombo, Kandy..."></div>
+                <div><label class="block font-semibold">Meals</label><input type="text" id="meals" class="w-full border p-2 rounded" placeholder="Breakfast included..."></div>
+                <div><label class="block font-semibold">Transport</label><input type="text" id="transport" class="w-full border p-2 rounded" placeholder="Private Car..."></div>
+                <div><label class="block font-semibold">Accommodation</label><input type="text" id="accommodation" class="w-full border p-2 rounded" placeholder="4 Star Hotel..."></div>
+            </div>
+
+            <hr>
+
+            <h3 class="text-xl font-bold text-gray-700">Before You Book (One item per line)</h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div><label class="block font-semibold">Right for you</label><textarea id="rightForYou" rows="3" class="w-full border p-2 rounded"></textarea></div>
+                <div><label class="block font-semibold">Visas</label><textarea id="visas" rows="3" class="w-full border p-2 rounded"></textarea></div>
+                <div><label class="block font-semibold">Accommodation Info</label><textarea id="accInfo" rows="3" class="w-full border p-2 rounded"></textarea></div>
+                <div><label class="block font-semibold">Joining Point</label><textarea id="joiningPoint" rows="3" class="w-full border p-2 rounded"></textarea></div>
+            </div>
+
+            <hr>
+
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold text-gray-700">Itinerary</h3>
+                <button type="button" onclick="addItineraryDay()" class="bg-gray-800 text-white px-3 py-1 rounded hover:bg-gray-700 text-sm">
+                    + Add Day
+                </button>
+            </div>
+            <div id="itineraryContainer" class="space-y-4">
+                </div>
+
+            <div class="flex gap-4 mt-8 pt-4 border-t">
+                <button type="button" onclick="saveCurrentTour()" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition">
+                    Save to List
+                </button>
+                <button type="button" onclick="generateAndDownloadJSON()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition">
+                    Generate & Download JSON
+                </button>
+            </div>
+            
+        </form>
+    </div>
+
+    <script>
+        // Main Data Object
+        let toursData = {
+            multidayTours: [],
+            experiences: [],
+            uniqueExperiences: []
+        };
+
+        // Utility: Convert textarea string with line breaks into an array
+        const textToArray = (id) => {
+            const val = document.getElementById(id).value.trim();
+            return val ? val.split('\n').map(item => item.trim()).filter(item => item !== "") : [];
+        };
+
+        // Add Itinerary Day dynamically
+        function addItineraryDay() {
+            const container = document.getElementById('itineraryContainer');
+            const dayDiv = document.createElement('div');
+            dayDiv.className = 'itinerary-item bg-gray-50 border p-4 rounded-lg flex gap-4 items-start';
+            dayDiv.innerHTML = `
+                <div class="w-1/3">
+                    <input type="text" class="day-title w-full border p-2 rounded" placeholder="Day Title (e.g. Day 1: Colombo)">
+                </div>
+                <div class="w-2/3 flex gap-2">
+                    <textarea class="day-desc w-full border p-2 rounded" rows="2" placeholder="Description..."></textarea>
+                    <button type="button" onclick="this.parentElement.parentElement.remove()" class="bg-red-500 text-white px-3 rounded hover:bg-red-600">X</button>
+                </div>
+            `;
+            container.appendChild(dayDiv);
+        }
+
+        // Initialize with one day
+        addItineraryDay();
+
+        // Save Current Form Data to Memory
+        function saveCurrentTour() {
+            // Basic Validation
+            const title = document.getElementById('title').value.trim();
+            if(!title) {
+                alert("Please enter a Title before saving.");
+                return;
+            }
+
+            // Gather Itinerary
+            const itineraryItems = [];
+            document.querySelectorAll('.itinerary-item').forEach(item => {
+                const dayTitle = item.querySelector('.day-title').value.trim();
+                const dayDesc = item.querySelector('.day-desc').value.trim();
+                if(dayTitle || dayDesc) {
+                    itineraryItems.push({ title: dayTitle, desc: dayDesc });
+                }
+            });
+
+            // Build Tour Object
+            const tourObject = {
+                title: title,
+                price: Number(document.getElementById('price').value) || 0,
+                duration: document.getElementById('duration').value,
+                image: document.getElementById('image').value,
+                description: document.getElementById('description').value,
+                whyLove: textToArray('whyLove'),
+                inclusions: {
+                    destinations: document.getElementById('destinations').value,
+                    meals: document.getElementById('meals').value,
+                    transport: document.getElementById('transport').value,
+                    accommodation: document.getElementById('accommodation').value,
+                    includedActivities: textToArray('includedActivities'),
+                    optionalActivities: textToArray('optionalActivities')
+                },
+                beforeYouBook: {
+                    rightForYou: textToArray('rightForYou'),
+                    visas: textToArray('visas'),
+                    accommodation: textToArray('accInfo'),
+                    joiningPoint: textToArray('joiningPoint')
+                },
+                itinerary: itineraryItems
+            };
+
+            // Push to selected category
+            const category = document.getElementById('category').value;
+            toursData[category].push(tourObject);
+
+            // Update UI Counters
+            updateCounters();
+
+            // Reset form
+            document.getElementById('tourForm').reset();
+            document.getElementById('itineraryContainer').innerHTML = '';
+            addItineraryDay(); // Add back one empty day
+            window.scrollTo(0, 0);
+
+            alert(`Successfully added to ${category}! You can add another one or click Download.`);
+        }
+
+        function updateCounters() {
+            document.getElementById('count-multi').innerText = toursData.multidayTours.length;
+            document.getElementById('count-exp').innerText = toursData.experiences.length;
+            document.getElementById('count-unique').innerText = toursData.uniqueExperiences.length;
+        }
+
+        // Generate and Download JSON
+        function generateAndDownloadJSON() {
+            // Check if there is data
+            const totalItems = toursData.multidayTours.length + toursData.experiences.length + toursData.uniqueExperiences.length;
+            
+            if(totalItems === 0) {
+                alert("No tours added yet! Please fill the form and click 'Save to List' first.");
+                return;
+            }
+
+            // Convert object to JSON string with pretty formatting
+            const jsonString = JSON.stringify(toursData, null, 2);
+            
+            // Create a Blob
+            const blob = new Blob([jsonString], { type: "application/json" });
+            const url = URL.createObjectURL(blob);
+            
+            // Create a temporary link element to trigger download
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "tours.json";
+            document.body.appendChild(a);
+            a.click();
+            
+            // Cleanup
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
+</body>
+</html>
