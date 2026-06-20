@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tour Data Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         textarea::-webkit-scrollbar { width: 8px; }
         textarea::-webkit-scrollbar-track { background: #f1f1f1; }
@@ -27,7 +28,6 @@
 
         <div class="mb-6 bg-indigo-50 p-4 rounded-lg border border-indigo-200">
             <label class="block font-bold mb-2 text-indigo-900">1. Load Existing tours.json (Optional)</label>
-            <p class="text-sm text-indigo-700 mb-2">If you have an old file, load it here first before adding new tours.</p>
             <div class="flex gap-2">
                 <input type="file" id="fileInput" accept=".json" class="border bg-white p-2 rounded w-full">
                 <button type="button" onclick="loadExistingJSON()" class="bg-indigo-600 text-white font-bold px-6 py-2 rounded hover:bg-indigo-700 transition whitespace-nowrap">
@@ -53,7 +53,20 @@
                 <div><label class="block font-semibold">Title</label><input type="text" id="title" class="w-full border p-2 rounded" required></div>
                 <div><label class="block font-semibold">Price (USD)</label><input type="number" id="price" class="w-full border p-2 rounded" required></div>
                 <div><label class="block font-semibold">Duration (e.g., 7 Days)</label><input type="text" id="duration" class="w-full border p-2 rounded" required></div>
-                <div><label class="block font-semibold">Image URL</label><input type="url" id="image" class="w-full border p-2 rounded" required></div>
+                
+                <div>
+                    <label class="block font-semibold">Image File Name (Without .png)</label>
+                    <div class="flex mt-1 shadow-sm">
+                        <span id="image-path-prefix" class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-200 text-gray-600 text-sm font-medium">
+                            /tours/multiday/
+                        </span>
+                        <input type="text" id="image-filename" class="flex-1 block w-full border border-gray-300 p-2 focus:ring-blue-500 focus:border-blue-500 min-w-0" placeholder="e.g. kandy-tour" required>
+                        <span class="inline-flex items-center px-3 rounded-r-md border border-l-0 border-gray-300 bg-gray-200 text-gray-600 text-sm font-medium">
+                            .png
+                        </span>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Generated Image Path: <span id="path-preview" class="font-mono text-blue-600 font-bold">/tours/multiday/.png</span></p>
+                </div>
             </div>
             
             <div>
@@ -94,12 +107,15 @@
             </div>
             <div id="itineraryContainer" class="space-y-4"></div>
 
-            <div class="flex gap-4 mt-8 pt-4 border-t">
+            <div class="flex flex-col md:flex-row gap-4 mt-8 pt-4 border-t">
                 <button type="button" onclick="saveCurrentTour()" class="flex-1 bg-green-600 text-white font-bold py-3 rounded-lg hover:bg-green-700 transition shadow-md">
                     3. Save to List
                 </button>
                 <button type="button" onclick="generateAndDownloadJSON()" class="flex-1 bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition shadow-md">
-                    4. Generate & Download JSON
+                    4. Download JSON
+                </button>
+                <button type="button" onclick="downloadFoldersAndList()" class="flex-1 bg-purple-600 text-white font-bold py-3 rounded-lg hover:bg-purple-700 transition shadow-md">
+                    5. Download Folders (.zip)
                 </button>
             </div>
             
@@ -108,6 +124,29 @@
 
     <script>
         let toursData = { multidayTours: [], experiences: [], uniqueExperiences: [] };
+
+        const imagePaths = {
+            multidayTours: "/tours/multiday/",
+            experiences: "/tours/experiences/",
+            uniqueExperiences: "/tours/unique/"
+        };
+
+        const prefixSpan = document.getElementById('image-path-prefix');
+        const fileNameInput = document.getElementById('image-filename');
+        const pathPreview = document.getElementById('path-preview');
+        const categorySelect = document.getElementById('category');
+
+        function updatePathPreview() {
+            const fileName = fileNameInput.value.trim();
+            const prefix = prefixSpan.innerText.trim();
+            pathPreview.innerText = prefix + fileName + ".png";
+        }
+
+        fileNameInput.addEventListener('input', updatePathPreview);
+        categorySelect.addEventListener('change', function() {
+            prefixSpan.innerText = imagePaths[this.value];
+            updatePathPreview();
+        });
 
         const textToArray = (id) => {
             const val = document.getElementById(id).value.trim();
@@ -131,15 +170,10 @@
         }
         addItineraryDay();
 
-        // NEW: Load existing JSON file
         function loadExistingJSON() {
             const fileInput = document.getElementById('fileInput');
             const file = fileInput.files[0];
-            
-            if(!file) {
-                alert("Please choose a file first!");
-                return;
-            }
+            if(!file) { alert("Please choose a file first!"); return; }
 
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -148,10 +182,9 @@
                     toursData.multidayTours = loadedData.multidayTours || [];
                     toursData.experiences = loadedData.experiences || [];
                     toursData.uniqueExperiences = loadedData.uniqueExperiences || [];
-                    
                     updateCounters();
                     alert("Old Data Loaded Successfully! You can now add new tours.");
-                    fileInput.value = ""; // Clear input
+                    fileInput.value = ""; 
                 } catch(err) {
                     alert("Error: The file is not a valid JSON.");
                 }
@@ -161,7 +194,12 @@
 
         function saveCurrentTour() {
             const title = document.getElementById('title').value.trim();
+            const fileName = fileNameInput.value.trim();
+            
             if(!title) { alert("Please enter a Title before saving."); return; }
+            if(!fileName) { alert("Please enter an Image File Name before saving."); return; }
+
+            const fullImageUrl = prefixSpan.innerText.trim() + fileName + ".png";
 
             const itineraryItems = [];
             document.querySelectorAll('.itinerary-item').forEach(item => {
@@ -174,7 +212,7 @@
                 title: title,
                 price: Number(document.getElementById('price').value) || 0,
                 duration: document.getElementById('duration').value,
-                image: document.getElementById('image').value,
+                image: fullImageUrl,
                 description: document.getElementById('description').value,
                 whyLove: textToArray('whyLove'),
                 inclusions: {
@@ -194,14 +232,16 @@
                 itinerary: itineraryItems
             };
 
-            const category = document.getElementById('category').value;
+            const category = categorySelect.value;
             toursData[category].push(tourObject);
 
             updateCounters();
             document.getElementById('tourForm').reset();
+            prefixSpan.innerText = imagePaths[categorySelect.value];
+            updatePathPreview();
             document.getElementById('itineraryContainer').innerHTML = '';
             addItineraryDay(); 
-            alert(`Added to ${category}! Add another or click Download.`);
+            alert(`Added to ${category}! Add another or click Download JSON.`);
         }
 
         function updateCounters() {
@@ -224,6 +264,60 @@
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+        }
+
+        // NEW: Generate Folders and Image Checklist ZIP
+        function downloadFoldersAndList() {
+            const totalItems = toursData.multidayTours.length + toursData.experiences.length + toursData.uniqueExperiences.length;
+            if(totalItems === 0) { 
+                alert("No tours added yet! Please load a JSON or add some tours first."); 
+                return; 
+            }
+
+            var zip = new JSZip();
+            
+            // Create folder structure inside the ZIP
+            var publicFolder = zip.folder("public");
+            var toursFolder = publicFolder.folder("tours");
+            
+            toursFolder.folder("multiday");
+            toursFolder.folder("experiences");
+            toursFolder.folder("unique");
+
+            // Generate checklist text file
+            let txt = "TOUR IMAGES CHECKLIST\n";
+            txt += "=====================\n";
+            txt += "Please place your image files in the exact folders as listed below:\n\n";
+
+            if(toursData.multidayTours.length > 0) {
+                txt += "--- Multi-day Tours ---\n";
+                toursData.multidayTours.forEach(t => txt += `[ ] public${t.image}\n`);
+                txt += "\n";
+            }
+            if(toursData.experiences.length > 0) {
+                txt += "--- Day Experiences ---\n";
+                toursData.experiences.forEach(t => txt += `[ ] public${t.image}\n`);
+                txt += "\n";
+            }
+            if(toursData.uniqueExperiences.length > 0) {
+                txt += "--- Unique Experiences ---\n";
+                toursData.uniqueExperiences.forEach(t => txt += `[ ] public${t.image}\n`);
+                txt += "\n";
+            }
+
+            toursFolder.file("Image_Checklist.txt", txt);
+
+            // Generate ZIP and trigger download
+            zip.generateAsync({type:"blob"}).then(function(content) {
+                const url = URL.createObjectURL(content);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "Tour_Folders_Structure.zip";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
         }
     </script>
 </body>
