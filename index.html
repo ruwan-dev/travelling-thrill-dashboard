@@ -1,9 +1,20 @@
+එල මචං! ඔයා එවපු HTML කෝඩ් එකට මම අර අපි කතා කරපු **SEO වැඩ කෑලි ටික (Meta Title, Meta Description, Image Alt Text, Focus Keywords)** ඔක්කොම එකතු කරලා අප්ඩේට් කළා.
+
+මේකේ වෙනස් කරපු ප්‍රධාන තැන්:
+
+1. **Google SEO Settings Box:** පින්තූර (Gallery) සෙක්ෂන් එකට යටින් අලුතෙන්ම කොළ පාට ලස්සන කොටසක් එකතු කළා SEO විස්තර ටයිප් කරන්න.
+2. **JSON Update (`saveCurrentTour`):** ඔයා ගහන SEO විස්තර ටික ලස්සනට `seo: { ... }` ඔබ්ජෙක්ට් එකකට සහ `imageAlt` එකට ගිහින් JSON එකේ සේව් වෙන්න හැදුවා.
+3. **ZIP Checklist Update (`downloadFoldersAndList`):** ඔයා ෆෝල්ඩර් ටික Download කරද්දී එන text ෆයිල් එකේ, හැම පින්තූරෙකටම අදාළ `Alt Text` එකත් පේන්න හැදුවා (SEO එක හරියටම මතක තියාගන්න ලේසි වෙන්න).
+
+මෙන්න අප්ඩේට් කරපු **සම්පූර්ණ HTML කෝඩ් එක**. මේක කෙලින්ම කොපි කරලා පරණ එක වෙනුවට දාගන්න:
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tour Data Generator</title>
+    <title>Tour Data & SEO Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
@@ -18,7 +29,7 @@
     <div class="max-w-5xl mx-auto bg-white rounded-xl shadow-lg p-8">
         
         <div class="flex flex-col md:flex-row justify-between items-center border-b pb-4 mb-6 gap-4">
-            <h1 class="text-3xl font-bold text-blue-900">Tour JSON Generator</h1>
+            <h1 class="text-3xl font-bold text-blue-900">Tour JSON & SEO Generator</h1>
             <div class="text-sm font-semibold bg-blue-100 text-blue-800 px-4 py-2 rounded-lg">
                 <span id="count-multi">0</span> Multi-day | 
                 <span id="count-exp">0</span> Experiences | 
@@ -73,6 +84,31 @@
                 <label class="block font-semibold text-gray-800">Gallery Images (One filename per line, without .png)</label>
                 <p class="text-xs text-gray-500 mb-2">These will automatically be saved in the same path as the main image.</p>
                 <textarea id="gallery" rows="3" class="w-full border border-gray-300 p-2 rounded focus:ring-blue-500 focus:border-blue-500" placeholder="e.g.&#10;kandy-gallery-1&#10;kandy-gallery-2&#10;kandy-gallery-3"></textarea>
+            </div>
+
+            <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-200 space-y-4">
+                <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">🌐 Google SEO Settings (Meta Data & Image Alt)</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block font-semibold text-emerald-900">Meta Title (Google Search Title)</label>
+                        <input type="text" id="metaTitle" class="w-full border border-emerald-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="Recommended: Under 60 characters">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-emerald-900">Image Alt Text (For Google Image SEO)</label>
+                        <input type="text" id="imageAlt" class="w-full border border-emerald-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="e.g. Beautiful sunrise view of Kandy cultural trip">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-emerald-900">Meta Description (Google Snippet summary)</label>
+                    <textarea id="metaDescription" rows="2" class="w-full border border-emerald-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="Recommended: 150-160 characters to attract clicks..."></textarea>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-emerald-900">Focus Keywords (One keyword per line)</label>
+                    <textarea id="seoKeywords" rows="2" class="w-full border border-emerald-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="e.g.&#10;kandy tour package&#10;sri lanka cultural tour"></textarea>
+                </div>
             </div>
             
             <div>
@@ -131,7 +167,6 @@
     <script>
         let toursData = { multidayTours: [], experiences: [], uniqueExperiences: [] };
 
-        // Updated default paths (using generic /images/ as requested in earlier steps)
         const imagePaths = {
             multidayTours: "/images/multiday/",
             experiences: "/images/experiences/",
@@ -155,7 +190,6 @@
             updatePathPreview();
         });
 
-        // Initialize prefix on load
         prefixSpan.innerText = imagePaths[categorySelect.value];
 
         const textToArray = (id) => {
@@ -212,7 +246,6 @@
             const prefix = prefixSpan.innerText.trim();
             const fullImageUrl = prefix + fileName + ".png";
 
-            // Process Gallery Images (NEW)
             const galleryFilenames = textToArray('gallery');
             const galleryUrls = galleryFilenames.map(name => prefix + name + ".png");
 
@@ -223,13 +256,20 @@
                 if(dayTitle || dayDesc) itineraryItems.push({ title: dayTitle, desc: dayDesc });
             });
 
+            // Added SEO and Image Alt fields to the object
             const tourObject = {
                 title: title,
                 price: Number(document.getElementById('price').value) || 0,
                 duration: document.getElementById('duration').value,
                 image: fullImageUrl,
-                gallery: galleryUrls, // Added Gallery Array
+                imageAlt: document.getElementById('imageAlt').value.trim(),
+                gallery: galleryUrls,
                 description: document.getElementById('description').value,
+                seo: {
+                    metaTitle: document.getElementById('metaTitle').value.trim(),
+                    metaDescription: document.getElementById('metaDescription').value.trim(),
+                    keywords: textToArray('seoKeywords')
+                },
                 whyLove: textToArray('whyLove'),
                 inclusions: {
                     destinations: document.getElementById('destinations').value,
@@ -282,7 +322,6 @@
             URL.revokeObjectURL(url);
         }
 
-        // Generate Folders and Image Checklist ZIP (Updated for Gallery)
         function downloadFoldersAndList() {
             const totalItems = toursData.multidayTours.length + toursData.experiences.length + toursData.uniqueExperiences.length;
             if(totalItems === 0) { 
@@ -292,7 +331,6 @@
 
             var zip = new JSZip();
             
-            // Create folder structure inside the ZIP
             var publicFolder = zip.folder("public");
             var imagesFolder = publicFolder.folder("images");
             
@@ -300,16 +338,16 @@
             imagesFolder.folder("experiences");
             imagesFolder.folder("unique");
 
-            // Generate checklist text file
-            let txt = "TOUR IMAGES CHECKLIST\n";
-            txt += "=====================\n";
+            // Updated to show Alt tags in the checklist
+            let txt = "TOUR IMAGES CHECKLIST WITH ALT TAGS\n";
+            txt += "===================================\n\n";
             txt += "Please place your image files in the exact folders as listed below:\n\n";
 
             const appendChecklist = (categoryArray, categoryName) => {
                 if(categoryArray.length > 0) {
                     txt += `--- ${categoryName} ---\n`;
                     categoryArray.forEach(t => {
-                        txt += `[ ] public${t.image} (Main Image)\n`;
+                        txt += `[ ] public${t.image} (Main Image) -> SEO Alt: "${t.imageAlt || 'None'}"\n`;
                         if(t.gallery && t.gallery.length > 0) {
                             t.gallery.forEach(g => {
                                 txt += `    [ ] public${g} (Gallery Image)\n`;
@@ -326,7 +364,6 @@
 
             imagesFolder.file("Image_Checklist.txt", txt);
 
-            // Generate ZIP and trigger download
             zip.generateAsync({type:"blob"}).then(function(content) {
                 const url = URL.createObjectURL(content);
                 const a = document.createElement('a');
@@ -341,3 +378,5 @@
     </script>
 </body>
 </html>
+
+```
