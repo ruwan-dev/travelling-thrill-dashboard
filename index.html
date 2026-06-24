@@ -50,7 +50,20 @@
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div><label class="block font-semibold">Title</label><input type="text" id="title" class="w-full border p-2 rounded" required></div>
+                <div>
+                    <label class="block font-semibold">Title</label>
+                    <input type="text" id="title" class="w-full border p-2 rounded focus:ring-2 focus:ring-blue-500" required oninput="generateSlug(this.value)">
+                </div>
+                <div>
+                    <label class="block font-semibold text-blue-700">Custom URL Slug (Live Preview)</label>
+                    <div class="flex mt-1 shadow-sm">
+                        <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-200 text-gray-600 text-sm font-medium">/tours/</span>
+                        <input type="text" id="slug" class="flex-1 block w-full border border-gray-300 p-2 rounded-r-md focus:ring-blue-500 focus:border-blue-500 min-w-0 font-mono text-blue-700 font-semibold" placeholder="e.g. beautiful-kandy-tour" required>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div><label class="block font-semibold">Price (USD)</label><input type="number" id="price" class="w-full border p-2 rounded" required></div>
                 <div><label class="block font-semibold">Duration (e.g., 7 Days)</label><input type="text" id="duration" class="w-full border p-2 rounded" required></div>
                 
@@ -69,7 +82,6 @@
                 </div>
             </div>
 
-            <!-- NEW: STRUCTURED GALLERY IMAGES WITH SEPARATE FIELDS -->
             <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 space-y-4">
                 <div class="flex justify-between items-center border-b pb-2">
                     <label class="block font-bold text-gray-800">📸 Tour Image Gallery (Max 15 Images)</label>
@@ -78,11 +90,9 @@
                     </button>
                 </div>
                 <div id="galleryContainer" class="space-y-3">
-                    <!-- Dynamic Rows Will Append Here -->
-                </div>
+                    </div>
             </div>
 
-            <!-- GOOGLE SEO SETTINGS BOX -->
             <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-200 space-y-4">
                 <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">🌐 Google SEO Settings (Meta Data & Main Image Alt)</h3>
                 
@@ -174,6 +184,20 @@
         const fileNameInput = document.getElementById('image-filename');
         const pathPreview = document.getElementById('path-preview');
         const categorySelect = document.getElementById('category');
+        const slugInput = document.getElementById('slug');
+
+        // URL SLUG Auto-Generator
+        let userModifiedSlug = false;
+        
+        slugInput.addEventListener('input', () => {
+            userModifiedSlug = true;
+        });
+
+        function generateSlug(text) {
+            if (!userModifiedSlug) {
+                slugInput.value = text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)+/g, "");
+            }
+        }
 
         function updatePathPreview() {
             const fileName = fileNameInput.value.trim();
@@ -185,13 +209,11 @@
         categorySelect.addEventListener('change', function() {
             prefixSpan.innerText = imagePaths[this.value];
             updatePathPreview();
-            // Automatically update gallery paths prefix preview dynamically if rows exist
             document.querySelectorAll('.gal-prefix').forEach(span => span.innerText = imagePaths[this.value]);
         });
 
         prefixSpan.innerText = imagePaths[categorySelect.value];
 
-        // NEW: FUNCTION TO ADD SEPARATE GALLERY FIELD ROWS
         function addGalleryRow() {
             const container = document.getElementById('galleryContainer');
             if(container.children.length >= 15) { alert("Maximum 15 gallery images allowed!"); return; }
@@ -265,15 +287,16 @@
 
         function saveCurrentTour() {
             const title = document.getElementById('title').value.trim();
+            const slug = document.getElementById('slug').value.trim();
             const fileName = fileNameInput.value.trim();
             
             if(!title) { alert("Please enter a Title before saving."); return; }
+            if(!slug) { alert("Please enter a valid URL Slug before saving."); return; }
             if(!fileName) { alert("Please enter a Main Image File Name before saving."); return; }
 
             const prefix = prefixSpan.innerText.trim();
             const fullImageUrl = prefix + fileName + ".png";
 
-            // SAVE SEPARATE FIELD GALLERY DATA (Updated)
             const galleryObjects = [];
             document.querySelectorAll('.gallery-row').forEach(row => {
                 const fName = row.querySelector('.gal-filename').value.trim();
@@ -295,6 +318,7 @@
 
             const tourObject = {
                 title: title,
+                slug: slug, // NEW: Saves Custom Slug here
                 price: Number(document.getElementById('price').value) || 0,
                 duration: document.getElementById('duration').value,
                 image: fullImageUrl,
@@ -329,6 +353,10 @@
 
             updateCounters();
             document.getElementById('tourForm').reset();
+            
+            // Reset Slug Behavior
+            userModifiedSlug = false;
+            
             prefixSpan.innerText = imagePaths[categorySelect.value];
             updatePathPreview();
             document.getElementById('galleryContainer').innerHTML = '';
