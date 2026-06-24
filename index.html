@@ -49,6 +49,7 @@
                 </select>
             </div>
 
+            <!-- TITLE AND URL SLUG -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                     <label class="block font-semibold">Title</label>
@@ -82,6 +83,7 @@
                 </div>
             </div>
 
+            <!-- STRUCTURED GALLERY IMAGES -->
             <div class="bg-gray-50 p-5 rounded-lg border border-gray-200 space-y-4">
                 <div class="flex justify-between items-center border-b pb-2">
                     <label class="block font-bold text-gray-800">📸 Tour Image Gallery (Max 15 Images)</label>
@@ -90,9 +92,11 @@
                     </button>
                 </div>
                 <div id="galleryContainer" class="space-y-3">
-                    </div>
+                    <!-- Dynamic Rows Will Append Here -->
+                </div>
             </div>
 
+            <!-- GOOGLE SEO SETTINGS BOX -->
             <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-200 space-y-4">
                 <h3 class="text-lg font-bold text-emerald-900 flex items-center gap-2">🌐 Google SEO Settings (Meta Data & Main Image Alt)</h3>
                 
@@ -110,11 +114,6 @@
                 <div>
                     <label class="block font-semibold text-emerald-900">Meta Description (Google Snippet summary)</label>
                     <textarea id="metaDescription" rows="2" class="w-full border border-emerald-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="Recommended: 150-160 characters to attract clicks..."></textarea>
-                </div>
-
-                <div>
-                    <label class="block font-semibold text-emerald-900">Focus Keywords (One keyword per line)</label>
-                    <textarea id="seoKeywords" rows="2" class="w-full border border-emerald-300 p-2 rounded focus:ring-2 focus:ring-emerald-500 bg-white" placeholder="e.g.&#10;kandy tour package&#10;sri lanka cultural tour"></textarea>
                 </div>
             </div>
             
@@ -318,7 +317,7 @@
 
             const tourObject = {
                 title: title,
-                slug: slug, // NEW: Saves Custom Slug here
+                slug: slug,
                 price: Number(document.getElementById('price').value) || 0,
                 duration: document.getElementById('duration').value,
                 image: fullImageUrl,
@@ -327,8 +326,7 @@
                 description: document.getElementById('description').value,
                 seo: {
                     metaTitle: document.getElementById('metaTitle').value.trim(),
-                    metaDescription: document.getElementById('metaDescription').value.trim(),
-                    keywords: textToArray('seoKeywords')
+                    metaDescription: document.getElementById('metaDescription').value.trim()
                 },
                 whyLove: textToArray('whyLove'),
                 inclusions: {
@@ -354,7 +352,6 @@
             updateCounters();
             document.getElementById('tourForm').reset();
             
-            // Reset Slug Behavior
             userModifiedSlug = false;
             
             prefixSpan.innerText = imagePaths[categorySelect.value];
